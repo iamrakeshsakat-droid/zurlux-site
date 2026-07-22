@@ -382,38 +382,43 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent-h
 <div class="content">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;">
     <div>
-      <form onsubmit="handleContact(event)">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Name</label>
-            <input type="text" placeholder="Your name" required>
-          </div>
-          <div class="form-group">
-            <label>Work email</label>
-            <input type="email" placeholder="you@company.com" required id="contact-email">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Organisation</label>
-          <input type="text" placeholder="Your company">
-        </div>
-        <div class="form-group">
-          <label>Estate size</label>
-          <select>
-            <option value="">Select...</option>
-            <option>Under 200 servers</option>
-            <option>200 – 1,000 servers</option>
-            <option>1,000 – 5,000 servers</option>
-            <option>Over 5,000 servers</option>
-            <option>MSP — multiple customer estates</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>What breaks on patch night?</label>
-          <textarea placeholder="Tell us about your environment, the failures you see, or the audit requirements you are dealing with."></textarea>
-        </div>
-        <button type="submit" class="btn" id="contact-btn">Send enquiry</button>
-      </form>
+      <form id="zform" onsubmit="handleContact(event)">
+  <div class="form-row">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" placeholder="Your name" required id="z-name">
+    </div>
+    <div class="form-group">
+      <label>Work email</label>
+      <input type="email" placeholder="you@company.com" required id="z-email">
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Organisation</label>
+    <input type="text" placeholder="Your company" id="z-org">
+  </div>
+  <div class="form-group">
+    <label>Estate size</label>
+    <select id="z-size">
+      <option value="">Select...</option>
+      <option>Under 200 servers</option>
+      <option>200 – 1,000 servers</option>
+      <option>1,000 – 5,000 servers</option>
+      <option>Over 5,000 servers</option>
+      <option>MSP — multiple customer estates</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>What breaks on patch night?</label>
+    <textarea id="z-msg" placeholder="Tell us about your environment, the failures you see, or the audit requirements you are dealing with."></textarea>
+  </div>
+  <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+    <label for="z-website">Do not fill this in</label>
+    <input type="text" id="z-website" name="company_website" tabindex="-1" autocomplete="off">
+  </div>
+  <button type="submit" class="btn" id="contact-btn">Send enquiry</button>
+  <p id="z-note" style="font-size:0.8rem;color:var(--muted);margin-top:0.75rem"></p>
+</form>
     </div>
 
     <div>
@@ -443,12 +448,60 @@ textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent-h
   </div>
 </div>
 <script>
+var ZURLUX_ENDPOINT = "https://script.google.com/macros/s/AKfycbxFasikwN7zTKLmEFhzvm5jgmxFyd9U-4CW9Q2WJsyEIQ9HTOFiFv_vsnNrzkxhEmSx/exec";
+
 function handleContact(e) {
   e.preventDefault();
-  const btn = document.getElementById('contact-btn');
-  btn.textContent = '✓ Sent — we will be in touch within 4 hours';
-  btn.style.background = 'var(--green)';
+  var btn  = document.getElementById('contact-btn');
+  var note = document.getElementById('z-note');
+
+  var data = {
+    site: "zurlux",
+    name:    (document.getElementById('z-name')  || {}).value || "",
+    email:   (document.getElementById('z-email') || {}).value || "",
+    org:     (document.getElementById('z-org')   || {}).value || "",
+    size:    (document.getElementById('z-size')  || {}).value || "",
+    message: (document.getElementById('z-msg')   || {}).value || "",
+    company_website: (document.getElementById('z-website') || {}).value || "",
+    source: "zurlux.com" + location.pathname,
+    submittedAt: new Date().toISOString()
+  };
+
+  if (!data.name.trim() || !data.email.trim()) {
+    note.textContent = 'Please add your name and work email.';
+    note.style.color = '#C2544B';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    note.textContent = 'That email address does not look right.';
+    note.style.color = '#C2544B';
+    return;
+  }
+
   btn.disabled = true;
+  btn.textContent = 'Sending…';
+  note.textContent = '';
+
+  fetch(ZURLUX_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(data),
+    redirect: "follow"
+  })
+  .then(function (r) { return r.json().catch(function () { return { ok: r.ok }; }); })
+  .then(function (res) {
+    if (!res.ok) { throw new Error(res.error || 'server rejected the submission'); }
+    btn.textContent = '✓ Sent — we will be in touch within 4 hours';
+    btn.style.background = 'var(--green)';
+    document.getElementById('zform').reset();
+  })
+  .catch(function (err) {
+    console.error('[Zurlux] form submission failed:', err);
+    btn.disabled = false;
+    btn.textContent = 'Send enquiry';
+    note.textContent = 'Could not send. Please email hello@zurlux.com directly.';
+    note.style.color = '#C2544B';
+  });
 }
 </script>
 
