@@ -376,7 +376,7 @@ footer::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;back
     </div>
     <div class="card-lg reveal">
       <h3>Request a walkthrough</h3>
-      <form id="cform">
+      <form id="cform" action="https://script.google.com/macros/s/AKfycbxFasikwN7zTKLmEFhzvm5jgmxFyd9U-4CW9Q2WJsyEIQ9HTOFiFv_vsnNrzkxhEmSx/exec" method="POST">
         <div class="field"><label for="n">Name</label><input id="n" type="text" placeholder="Your name"></div>
         <div class="field"><label for="e">Work email</label><input id="e" type="email" placeholder="you@company.com"></div>
         <div class="field"><label for="o">Organisation</label><input id="o" type="text" placeholder="Company"></div>
@@ -435,8 +435,28 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isInter
 document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
 var bt=document.getElementById('billToggle');
 if(bt)bt.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var m=b.dataset.bill;this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});document.querySelectorAll('.plan').forEach(function(pl){var mo=pl.querySelector('.amt-mo'),yr=pl.querySelector('.amt-yr'),u=pl.querySelector('.per-unit');if(!mo||!yr)return;mo.style.display=m==='mo'?'inline':'none';yr.style.display=m==='yr'?'inline':'none';if(u)u.textContent=m==='mo'?'month':'year';});});
-var form=document.getElementById('cform');
-if(form)form.addEventListener('submit',function(e){e.preventDefault();document.getElementById('cnote').textContent='Not sent — this form needs a backend connected. For now, email hello@zurlux.com directly.';});
+var form = document.getElementById('cform');
+if (form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var note = document.getElementById('cnote');
+    note.textContent = 'Sending...';
+
+    var formData = new FormData(form);
+
+    fetch(form.action, {
+      method: 'POST',
+      body: formData
+    })
+    .then(function(response) {
+      note.textContent = 'Thank you! Your message has been sent successfully.';
+      form.reset();
+    })
+    .catch(function(error) {
+      note.textContent = 'Oops! Something went wrong. Please try emailing hello@zurlux.com directly.';
+    });
+  });
+}
 </script>
   
 </body>
